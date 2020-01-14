@@ -63,6 +63,26 @@ function CopyDirectory(src, dest, excl) {
 }
 
 
+//查找目录
+function FindDirectory(src, regexp){
+	var subfiles = fs.readdirSync(src);
+    for(var i=0;i<subfiles.length;i++){
+		var item_path = path.join(src, subfiles[i]);
+		var temp = fs.statSync(item_path);
+		if(regexp.test(item_path)){
+			return regexp.exec(item_path)[1];
+		}else{
+			if(temp.isFile()){
+				
+			}else{
+				var sub = FindDirectory(item_path, regexp);
+				if(sub)return sub;
+			}
+		}
+	}
+	return null;
+}
+
 //加载配置
 function LoadConfigure(){
 	try{
@@ -88,10 +108,17 @@ function DoConfigureStep(){
 	console.log("-------------------------------------------");
 	if(cfgs.desc)console.log(cfgs.desc);
 	if(cfgs.type == "SELECT_DIR"){
-		var subfiles = fs.readdirSync(cfgs.param);
+		var dir;
+		if(cfgs.regexp){
+			var reg = new RegExp(cfgs.regexp);
+			dir = FindDirectory(".",reg);			
+		}else{
+			dir = cfgs.dir;
+		}		
+		var subfiles = fs.readdirSync(dir);
 		var subdirs = [];
 		for(var i in subfiles){
-			if(fs.statSync(cfgs.param + "/" + subfiles[i]).isDirectory()){
+			if(fs.statSync(dir + "/" + subfiles[i]).isDirectory()){
 				subdirs.push(subfiles[i]);
 			}
 		}
