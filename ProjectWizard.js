@@ -20,6 +20,8 @@ var configure_cur = {};
  
 var configure_step = -1; //当前步骤
 
+var cache = {};
+
 //加载模板列表
 var templates = fs.readdirSync(base);
 if(!templates.length){
@@ -101,18 +103,44 @@ function DoConfigureResult(sel){
 	}
 }
 
+
+//
+function SaveCache(key, val){
+	cache[key] = val;
+	fs.writeFileSync("projectcache.json", JSON.stringify(cache));
+}
+
+//加载数据缓存
+function LoadCache(){
+	try{
+		var data = fs.readFileSync("projectcache.json");
+		var cfg = JSON.parse(data);
+		cache = cfg;
+	}catch(e){
+		
+	}
+}
+
+
 //执行单步配置
 function DoConfigureStep(){
 	var cfgs = configure[configure_step];
 	configure_cur = cfgs;
-	console.log("-------------------------------------------");
-	if(cfgs.desc)console.log(cfgs.desc);
-	if(cfgs.type == "SELECT_DIR"){
+	
+	if(cfgs.type == "SELECT_DIR"){ //选择目录
 		var dir;
-		if(cfgs.regexp){
-			var reg = new RegExp(cfgs.regexp);
-			dir = FindDirectory(".",reg);			
-		}else{
+		if(cfgs.regexp){ //按正则表达式查找目录
+			var key = "regdir_"+ cfgs.regexp;
+			//先从缓存里找
+			if(cache[key]){	 			
+				dir = cache[key];
+			}else{
+				console.log("find directory ...");
+				var reg = new RegExp(cfgs.regexp);
+				dir = FindDirectory(".",reg);
+				SaveCache(key, dir);
+			}
+		}else{ //按目录名指定
 			dir = cfgs.dir;
 		}		
 		var subfiles = fs.readdirSync(dir);
@@ -122,6 +150,9 @@ function DoConfigureStep(){
 				subdirs.push(subfiles[i]);
 			}
 		}
+		//显示选择列表
+		console.log("-------------------------------------------");
+		if(cfgs.desc)console.log(cfgs.desc);
 		ShowSelect(subdirs);
 	}else{
 		throw new Error("unsupport type : " + cfgs.type);
@@ -196,6 +227,7 @@ console.log("==================== Project Wizard ====================");
 console.log("  for create code project from template");
 console.log(" ");
 
+LoadCache();
 ShowSelect(templates);
 
 
