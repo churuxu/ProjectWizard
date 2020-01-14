@@ -5,7 +5,7 @@ ProjectWizard
 
 安装说明
 --------
-
+0. 安装nodejs，并添加node.exe所在目录到PATH环境变量
 1. 运行Register.bat，会生成Register.reg
 2. 双击Register.reg，导入到注册表
 3. 将自己需要的代码工程模板放到Template目录下
