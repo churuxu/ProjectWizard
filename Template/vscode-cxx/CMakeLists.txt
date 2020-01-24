@@ -13,7 +13,7 @@ set(HEADER_EXTS *.h *.hpp)
 
 list(APPEND EXCLUDES ".*/config/.*")
 
-set(FLAGS )
+#set(FLAGS "-DCS_PLATFORM=0")
 
 set(LDFLAGS "")
 
@@ -52,7 +52,11 @@ if(NOT DEFINED TEST_FILTER)
 	set(TEST_FILTER ".*test.*\..*")
 endif()
 if(NOT DEFINED BUILD_TEST)
-	set(BUILD_TEST 1)
+	if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+		set(BUILD_TEST 1)
+	else()
+		set(BUILD_TEST 0)
+	endif()
 endif()
 set(CFLAGS ${FLAGS})
 set(CXXFLAGS ${FLAGS})
@@ -78,10 +82,24 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC) #vc
 	add_compile_options(-D_CRT_SECURE_NO_WARNINGS)
 else() #gcc
 	add_compile_options(-Wall)
+	
+#----------------- no dep libstdc++.so libgcc_s.so -------------------------
+if(NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+	if(${WIN32})
+		set(LDFLAGS "-static ${LDFLAGS}")
+	else()
+		if(NOT EXISTS ${CMAKE_BINARY_DIR}/libstdc++.a)
+			execute_process(COMMAND ${CMAKE_CXX_COMPILER} -print-file-name=libstdc++.a OUTPUT_VARIABLE LIBSTDCXXPATH OUTPUT_STRIP_TRAILING_WHITESPACE)
+			execute_process(COMMAND ln -s ${LIBSTDCXXPATH} WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+		endif()
+		set(LDFLAGS "-L. -static-libgcc ${LDFLAGS}")
+	endif()
+endif()	
+	
 endif()
 
-
 #-------------------- generic flags --------------------
+
 set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} ${CFLAGS})
 set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} ${CXXFLAGS})
 set(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} ${LDFLAGS})
